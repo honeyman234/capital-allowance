@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIRS Capital Allowance Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl">
+        <!-- Header -->
+        <h1 class="text-3xl font-bold text-center text-purple-700 mb-6">Capital Allowance Calculator</h1>
+        <p class="text-center text-gray-600 mb-8">
+            <span class="font-semibold text-green-600">This script was enhanced with input from the FIRS Returns and Payment Processing Unit Adeoyo ETO</span> 
+
+        <!-- Input Form -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label for="assetClass" class="block text-sm font-medium text-gray-700">Asset Class:</label>
+                <select id="assetClass" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                    <option value="plant and machinery">Plant and Machinery</option>
+                    <option value="furniture and fittings">Furniture and Fittings</option>
+                    <option value="office equipment">Office Equipment</option>
+                    <option value="motor vehicle">Motor Vehicle</option>
+                    <option value="building">Building</option>
+                </select>
+            </div>
+            <div>
+                <label for="cost" class="block text-sm font-medium text-gray-700">Cost (₦):</label>
+                <input type="number" id="cost" value="1000000" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+            </div>
+            <div>
+                <label for="purchaseYear" class="block text-sm font-medium text-gray-700">Purchase Year:</label>
+                <input type="number" id="purchaseYear" value="2023" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+            </div>
+            <div>
+                <label for="purchaseMonth" class="block text-sm font-medium text-gray-700">Purchase Month:</label>
+                <select id="purchaseMonth" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6" selected>June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            <div>
+                <label for="accountingYearEnd" class="block text-sm font-medium text-gray-700">Accounting Year End:</label>
+                <select id="accountingYearEnd" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12" selected>December</option>
+                </select>
+            </div>
+            <div>
+                <label for="numYears" class="block text-sm font-medium text-gray-700">Number of Years:</label>
+                <input type="number" id="numYears" value="5" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4">
+            <button onclick="calculate()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">
+                Calculate
+            </button>
+            <button onclick="exportToPdf()" id="exportPdfBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">
+                Export to PDF
+            </button>
+        </div>
+
+        <!-- Results Area -->
+        <div id="results" class="mt-8">
+            <div id="loading" class="hidden text-center text-gray-500">Calculating...</div>
+            <div id="prorateMessage" class="hidden text-yellow-600 text-sm italic text-center mb-4"></div>
+            <div id="resultsContent" class="hidden">
+                <table id="resultsTable" class="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden">
+                    <thead class="bg-purple-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year Of Assessment</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Initial Allowance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Annual Allowance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TWDV End</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="errorMessage" class="hidden mt-4 text-center text-red-600 font-semibold"></div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_RATES = {
+            "plant and machinery": { IA: 0.50, AA: 0.25 },
+            "furniture and fittings": { IA: 0.25, AA: 0.20 },
+            "office equipment": { IA: 0.50, AA: 0.25 },
+            "motor vehicle": { IA: 0.50, AA: 0.25 },
+            "building": { IA: 0.15, AA: 0.10 },
+        };
+        const RESIDUAL_VALUE = 100;
+        const { jsPDF } = window.jspdf;
+
+        function displayMessage(id, message, isError = false) {
+            const element = document.getElementById(id);
+            element.textContent = message;
+            element.classList.remove('hidden');
+            if (isError) {
+                element.classList.add('text-red-600', 'font-semibold');
+            } else {
+                element.classList.remove('text-red-600', 'font-semibold');
+            }
+        }
+
+        function calculate() {
+            // Hide previous results and messages
+            document.getElementById('resultsContent').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('prorateMessage').classList.add('hidden');
+            document.getElementById('resultsBody').innerHTML = '';
+            document.getElementById('loading').classList.remove('hidden');
+
+            setTimeout(() => {
+                try {
+                    const assetClass = document.getElementById('assetClass').value.toLowerCase();
+                    const cost = parseFloat(document.getElementById('cost').value);
+                    const purchaseYear = parseInt(document.getElementById('purchaseYear').value)+1;
+                    const purchaseMonth = parseInt(document.getElementById('purchaseMonth').value);
+                    const accountingYearEnd = parseInt(document.getElementById('accountingYearEnd').value);
+                    const numYears = parseInt(document.getElementById('numYears').value);
+
+                    // Input validation
+                    if (isNaN(cost) || isNaN(purchaseYear) || isNaN(purchaseMonth) || isNaN(accountingYearEnd) || isNaN(numYears) || cost <= 0 || purchaseMonth < 1 || purchaseMonth > 12 || accountingYearEnd < 1 || accountingYearEnd > 12 || numYears <= 0) {
+                        throw new Error("Invalid input. Please ensure all fields are filled correctly with positive numbers.");
+                    }
+                    const rates = DEFAULT_RATES[assetClass];
+                    if (!rates) {
+                        throw new Error(`Unknown asset class: ${assetClass}`);
+                    }
+
+                    const initialAllowanceRate = rates.IA;
+                    const annualAllowanceRate = rates.AA;
+
+                    let initialAllowance = cost * initialAllowanceRate;
+                    let taxWrittenDownValue = cost - initialAllowance;
+
+                    const resultsBody = document.getElementById('resultsBody');
+
+                    for (let i = 0; i < numYears; i++) {
+                        const currentYear = purchaseYear + i;
+                        let currentInitialAllowance = 0;
+                        let annualAllowance = 0;
+
+                        if (i === 0) {
+                            currentInitialAllowance = initialAllowance;
+                            
+                            let prorateMonths;
+                            if (purchaseMonth <= accountingYearEnd) {
+                                prorateMonths = (accountingYearEnd - purchaseMonth) + 1;
+                            } else {
+                                prorateMonths = (12 - purchaseMonth) + accountingYearEnd + 1;
+                            }
+                            
+                            const prorateFactor = prorateMonths / 12;
+                            displayMessage('prorateMessage', `Note: There is a pro-ration as the purchase is short of 12 months in the first accounting period (${prorateMonths} months).`);
+                            annualAllowance = (cost - initialAllowance) * annualAllowanceRate * prorateFactor;
+                        } else {
+                            annualAllowance = (cost - initialAllowance) * annualAllowanceRate;
+                        }
+
+                        if (taxWrittenDownValue - annualAllowance <= RESIDUAL_VALUE) {
+                            annualAllowance = Math.max(0, taxWrittenDownValue - RESIDUAL_VALUE);
+                        }
+                        
+                        taxWrittenDownValue -= annualAllowance;
+
+                        const row = resultsBody.insertRow();
+                        row.className = 'bg-white hover:bg-gray-50 transition-colors duration-200';
+                        const cell1 = row.insertCell(0);
+                        const cell2 = row.insertCell(1);
+                        const cell3 = row.insertCell(2);
+                        const cell4 = row.insertCell(3);
+
+                        cell1.textContent = currentYear;
+                        cell2.textContent = `₦${currentInitialAllowance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+                        cell3.textContent = `₦${annualAllowance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+                        cell4.textContent = `₦${taxWrittenDownValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+
+                        cell1.className = 'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900';
+                        cell2.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
+                        cell3.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
+                        cell4.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
+                    }
+
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('resultsContent').classList.remove('hidden');
+
+                } catch (e) {
+                    document.getElementById('loading').classList.add('hidden');
+                    displayMessage('errorMessage', e.message, true);
+                }
+            }, 1000); // 1-second delay for dramatic effect
+        }
+
+        function exportToPdf() {
+            const resultsTable = document.getElementById('resultsTable');
+
+            // Check if results are visible before trying to export
+            if (resultsTable.closest('#resultsContent').classList.contains('hidden')) {
+                displayMessage('errorMessage', 'Please run a calculation before exporting to PDF.', true);
+                return;
+            }
+
+            const assetClass = document.getElementById('assetClass').options[document.getElementById('assetClass').selectedIndex].text;
+            const cost = parseFloat(document.getElementById('cost').value);
+
+            // Create a temporary element to hold the content for the PDF
+            const tempDiv = document.createElement('div');
+            tempDiv.style.padding = '20px';
+            tempDiv.style.fontFamily = 'Inter, sans-serif';
+            tempDiv.innerHTML = `
+                <h1 style="font-size: 24px; font-weight: bold; text-align: center; color: #6b46c1; margin-bottom: 20px;">Capital Allowance Schedule</h1>
+                <p style="text-align: center; color: #4b5563; margin-bottom: 10px;">
+                    Asset Class: ${assetClass} | Cost: ₦${cost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                </p>
+                <p style="text-align: center; color: #4b5563; font-style: italic; font-size: 14px; margin-bottom: 20px;">
+                    This script was enhanced with input from the FIRS Returns and Payment Processing Unit Adeoyo ETO  </p>
+            `;
+
+            // Clone the results table and append it to the temporary div
+            const clonedTable = resultsTable.cloneNode(true);
+            tempDiv.appendChild(clonedTable);
+
+            // Temporarily append the div to the body to be rendered by html2canvas
+            document.body.appendChild(tempDiv);
+
+            // Use html2canvas to convert the temporary div to an image
+            html2canvas(tempDiv, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const doc = new jsPDF('p', 'pt', 'a4');
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = doc.internal.pageSize.getHeight();
+                
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = imgWidth / imgHeight;
+                const finalImgWidth = pdfWidth - 40; // Add some padding
+                const finalImgHeight = finalImgWidth / ratio;
+                const xOffset = (pdfWidth - finalImgWidth) / 2;
+                const yOffset = (pdfHeight - finalImgHeight) / 2;
+
+                doc.addImage(imgData, 'PNG', xOffset, yOffset, finalImgWidth, finalImgHeight);
+                doc.save('capital-allowance-schedule.pdf');
+
+                // Clean up the temporary div from the body
+                document.body.removeChild(tempDiv);
+            });
+        }
+    </script>
+</body>
+</html>
